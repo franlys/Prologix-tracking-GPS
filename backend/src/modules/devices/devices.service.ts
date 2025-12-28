@@ -8,7 +8,7 @@ import {
 import { UsersService } from '../users/users.service';
 
 // Extended device interface with position data for frontend
-interface DeviceWithPosition extends GpsTraceDevice {
+export interface DeviceWithPosition extends GpsTraceDevice {
   lastPosition?: {
     lat: string;
     lng: string;
