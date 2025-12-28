@@ -75,9 +75,9 @@ JWT_EXPIRES_IN=7d
 GPS_TRACE_API_URL=https://api.gps-trace.com
 GPS_TRACE_PARTNER_TOKEN=0aND8tB2hzHzsOWsdcoiDuYCcdd3Wg1VaQbfBWex7TwvfZ7Ufpv0Di10tiqx4dJT
 
-# Stripe
-STRIPE_SECRET_KEY=sk_test_51SjOfNEYEgG3aMssMkI4Pj9O9AbnGffYcgJHKmvYej5qoA428pMo8s8q1thhYwYUuJ6l6bkER9VKHI4qfpZ788yn00crUmAOGc
-STRIPE_PUBLISHABLE_KEY=pk_test_51SjOfNEYEgG3aMssKHY22GlN7yTZ2eRpv86uek2kGfZPEsQz0s6XscgZTyYVl0tP8wmsLc0eAV3pegzMfP4BLRKE001DDmg2QB
+# Stripe (usa tus propias claves de Stripe Dashboard)
+STRIPE_SECRET_KEY=sk_test_TUS_CLAVES_AQUI
+STRIPE_PUBLISHABLE_KEY=pk_test_TUS_CLAVES_AQUI
 STRIPE_WEBHOOK_SECRET=whsec_CONFIGURAR_DESPUES
 
 # Frontend URL (obtendrás la URL después del deploy del frontend)
