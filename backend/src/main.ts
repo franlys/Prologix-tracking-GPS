@@ -22,6 +22,7 @@ async function bootstrap() {
   await app.listen(port);
 
   console.log(`🚀 Prologix Tracking GPS Backend running on port ${port}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
 bootstrap();
