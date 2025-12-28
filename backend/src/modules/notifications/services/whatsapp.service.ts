@@ -1,13 +1,17 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import makeWASocket, {
-  DisconnectReason,
-  useMultiFileAuthState,
-  WASocket,
-  proto,
-} from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
+// import makeWASocket, {
+//   DisconnectReason,
+//   useMultiFileAuthState,
+//   WASocket,
+//   proto,
+// } from '@whiskeysockets/baileys';
+// import { Boom } from '@hapi/boom';
 import * as path from 'path';
 import * as fs from 'fs';
+
+// Temporary types to avoid compilation errors
+type WASocket = any;
+type proto = any;
 
 @Injectable()
 export class WhatsAppService implements OnModuleInit, OnModuleDestroy {
@@ -43,59 +47,17 @@ export class WhatsAppService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async connect() {
-    try {
-      const { state, saveCreds } = await useMultiFileAuthState(this.authPath);
+    // Baileys integration disabled - using Evolution API instead
+    this.logger.warn('⚠️ WhatsApp Baileys integration disabled - using Evolution API');
+    return;
 
-      this.sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: true, // Shows QR in terminal
-        logger: {
-          level: 'silent', // Can be 'error', 'warn', 'info', 'debug', 'trace'
-          error: () => {},
-          warn: () => {},
-          info: () => {},
-          debug: () => {},
-          trace: () => {},
-          child: () => ({
-            level: 'silent',
-            error: () => {},
-            warn: () => {},
-            info: () => {},
-            debug: () => {},
-            trace: () => {},
-            child: () => ({} as any),
-          }),
-        },
-      });
-
-      this.sock.ev.on('creds.update', saveCreds);
-
-      this.sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) {
-          this.logger.log('\n📱 Scan this QR code with WhatsApp:\n');
-        }
-
-        if (connection === 'close') {
-          const shouldReconnect =
-            (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-
-          this.isConnected = false;
-          this.logger.warn('❌ WhatsApp connection closed');
-
-          if (shouldReconnect) {
-            this.logger.log('🔄 Reconnecting...');
-            setTimeout(() => this.connect(), 5000);
-          }
-        } else if (connection === 'open') {
-          this.isConnected = true;
-          this.logger.log('✅ WhatsApp connected successfully!');
-        }
-      });
-    } catch (error) {
-      this.logger.error('❌ Failed to connect to WhatsApp:', error.message);
-    }
+    // TODO: Re-enable when Baileys ESM compatibility is resolved
+    // try {
+    //   const { state, saveCreds } = await useMultiFileAuthState(this.authPath);
+    //   this.sock = makeWASocket({ ... });
+    // } catch (error) {
+    //   this.logger.error('❌ Failed to connect to WhatsApp:', error.message);
+    // }
   }
 
   async sendNotification(
