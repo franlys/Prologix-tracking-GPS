@@ -22,6 +22,7 @@ export class AuthService {
       registerDto.email,
       registerDto.password,
       registerDto.name,
+      registerDto.phoneNumber,
     );
 
     const payload = { sub: user.id, email: user.email, role: user.role };
