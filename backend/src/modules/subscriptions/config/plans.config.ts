@@ -85,11 +85,11 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
     id: SubscriptionPlan.FREE,
     name: 'Gratuito',
     description: 'Para usuarios individuales que quieren probar el servicio',
-    tagline: 'Rastrea 3 vehículos GRATIS para siempre',
+    tagline: 'Rastrea 1 vehículo GRATIS para siempre',
     recommended: false,
     trialDays: 0,
     features: {
-      maxDevices: 3,
+      maxDevices: 1,
       maxGeofences: 5,
       maxSharedUsers: 1,
       historyRetentionDays: 7,
@@ -104,7 +104,7 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       sosButton: false,
       nightMode: false,
 
-      basicReports: true,
+      basicReports: false,
       advancedReports: false,
       whiteLabelReports: false,
       scheduledReports: false,
@@ -119,7 +119,7 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       routeOptimization: false,
       anomalyDetection: false,
       driverGamification: false,
-      savingsCalculator: true, // Básico
+      savingsCalculator: false,
 
       apiAccess: false,
       apiRequestsPerMonth: 0,
@@ -137,7 +137,7 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
     pricing: {
       monthlyPricePerDevice: 0,
       yearlyPricePerDevice: 0,
-      currency: 'MXN',
+      currency: 'DOP', // Dominican Pesos
       volumeDiscounts: [],
     },
   },
@@ -145,13 +145,76 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
   [SubscriptionPlan.BASICO]: {
     id: SubscriptionPlan.BASICO,
     name: 'Básico',
-    description: 'Ideal para familias y pequeños negocios',
-    tagline: 'Por el precio de un café, rastrea 10 vehículos con WhatsApp incluido',
+    description: 'Ideal para individuos, motos, un solo carro',
+    tagline: 'Ubicación en tiempo real con historial de 7 días',
+    recommended: false,
+    trialDays: 30,
+    features: {
+      maxDevices: 1,
+      maxGeofences: 5,
+      maxSharedUsers: 1,
+      historyRetentionDays: 7,
+
+      emailNotifications: true,
+      pushNotifications: true,
+      whatsappNotifications: false,
+      smsNotifications: false,
+
+      basicAlerts: true,
+      advancedAlerts: false,
+      sosButton: false,
+      nightMode: false,
+
+      basicReports: false,
+      advancedReports: false,
+      whiteLabelReports: false,
+      scheduledReports: false,
+
+      driverManagement: false,
+      tripManagement: false,
+      fuelManagement: false,
+      predictiveMaintenance: false,
+      remoteControl: false,
+
+      aiPredictions: false,
+      routeOptimization: false,
+      anomalyDetection: false,
+      driverGamification: false,
+      savingsCalculator: false,
+
+      apiAccess: false,
+      apiRequestsPerMonth: 0,
+      webhooks: false,
+      thirdPartyIntegrations: false,
+
+      supportLevel: 'email',
+      supportResponseTime: '48-72 horas',
+
+      whiteLabel: false,
+      multiTenant: false,
+      dashcamCloud: false,
+      dashcamStorageGB: 0,
+    },
+    pricing: {
+      monthlyPricePerDevice: 499,
+      yearlyPricePerDevice: 4790, // 20% descuento (499 x 12 x 0.8)
+      currency: 'DOP',
+      stripePriceIdMonthly: 'price_basic_monthly_dop',
+      stripePriceIdYearly: 'price_basic_yearly_dop',
+      volumeDiscounts: [],
+    },
+  },
+
+  [SubscriptionPlan.PROFESIONAL]: {
+    id: SubscriptionPlan.PROFESIONAL,
+    name: 'Profesional',
+    description: 'Para negocios pequeños y flotas medianas',
+    tagline: 'Geocercas ilimitadas, reportes, alertas avanzadas y WhatsApp',
     recommended: true,
     trialDays: 30,
     features: {
       maxDevices: 10,
-      maxGeofences: 20,
+      maxGeofences: 999999, // Ilimitado
       maxSharedUsers: 5,
       historyRetentionDays: 30,
 
@@ -168,10 +231,10 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       basicReports: true,
       advancedReports: false,
       whiteLabelReports: false,
-      scheduledReports: true, // Email diario/semanal
+      scheduledReports: true,
 
       driverManagement: false,
-      tripManagement: false,
+      tripManagement: true,
       fuelManagement: false,
       predictiveMaintenance: false,
       remoteControl: false,
@@ -180,7 +243,7 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       routeOptimization: false,
       anomalyDetection: false,
       driverGamification: false,
-      savingsCalculator: true, // Completo
+      savingsCalculator: true,
 
       apiAccess: false,
       apiRequestsPerMonth: 0,
@@ -196,27 +259,30 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       dashcamStorageGB: 0,
     },
     pricing: {
-      monthlyPricePerDevice: 2.99,
-      yearlyPricePerDevice: 29.90, // ~2 meses gratis
-      currency: 'MXN',
-      stripePriceIdMonthly: 'price_basic_monthly', // Configurar en Stripe
-      stripePriceIdYearly: 'price_basic_yearly',
-      volumeDiscounts: [],
+      monthlyPricePerDevice: 899,
+      yearlyPricePerDevice: 8630, // 20% descuento (899 x 12 x 0.8)
+      currency: 'DOP',
+      stripePriceIdMonthly: 'price_pro_monthly_dop',
+      stripePriceIdYearly: 'price_pro_yearly_dop',
+      volumeDiscounts: [
+        { minDevices: 5, discountPercent: 11 }, // RD$799/dispositivo
+        { minDevices: 10, discountPercent: 22 }, // RD$699/dispositivo
+      ],
     },
   },
 
-  [SubscriptionPlan.PROFESIONAL]: {
-    id: SubscriptionPlan.PROFESIONAL,
-    name: 'Profesional',
-    description: 'Para empresas con flotas medianas',
-    tagline: 'Todo lo que necesitas para gestionar tu flota: viajes, conductores, mantenimiento y control remoto',
+  [SubscriptionPlan.EMPRESARIAL]: {
+    id: SubscriptionPlan.EMPRESARIAL,
+    name: 'Empresa',
+    description: 'Para flotas grandes y corporativos',
+    tagline: 'Gestión completa de flota con reportes avanzados, API y control remoto',
     recommended: false,
     trialDays: 30,
     features: {
-      maxDevices: 50,
+      maxDevices: 999999, // Ilimitado
       maxGeofences: 999999, // Ilimitado
-      maxSharedUsers: 20,
-      historyRetentionDays: 90,
+      maxSharedUsers: 999999, // Ilimitado
+      historyRetentionDays: 180,
 
       emailNotifications: true,
       pushNotifications: true,
@@ -239,7 +305,7 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       predictiveMaintenance: true,
       remoteControl: true,
 
-      aiPredictions: true, // Básico
+      aiPredictions: true,
       routeOptimization: true,
       anomalyDetection: false,
       driverGamification: true,
@@ -248,7 +314,7 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       apiAccess: true,
       apiRequestsPerMonth: 10000,
       webhooks: true,
-      thirdPartyIntegrations: true, // Google, Zapier
+      thirdPartyIntegrations: true,
 
       supportLevel: 'priority',
       supportResponseTime: '< 12 horas',
@@ -259,85 +325,15 @@ export const PLANS: Record<SubscriptionPlan, Plan> = {
       dashcamStorageGB: 0,
     },
     pricing: {
-      monthlyPricePerDevice: 4.99,
-      yearlyPricePerDevice: 49.90, // ~2 meses gratis
-      currency: 'MXN',
-      stripePriceIdMonthly: 'price_pro_monthly',
-      stripePriceIdYearly: 'price_pro_yearly',
+      monthlyPricePerDevice: 1499,
+      yearlyPricePerDevice: 14390, // 20% descuento (1499 x 12 x 0.8)
+      currency: 'DOP',
+      stripePriceIdMonthly: 'price_enterprise_monthly_dop',
+      stripePriceIdYearly: 'price_enterprise_yearly_dop',
       volumeDiscounts: [
-        { minDevices: 25, discountPercent: 10 }, // $4.49/dispositivo
-        { minDevices: 50, discountPercent: 15 }, // $4.24/dispositivo
-        { minDevices: 100, discountPercent: 20 }, // $3.99/dispositivo
-        { minDevices: 200, discountPercent: 25 }, // $3.74/dispositivo
-      ],
-    },
-  },
-
-  [SubscriptionPlan.EMPRESARIAL]: {
-    id: SubscriptionPlan.EMPRESARIAL,
-    name: 'Empresarial',
-    description: 'Para grandes flotas y corporativos',
-    tagline: 'Plataforma white-label con IA, API ilimitada y soporte dedicado',
-    recommended: false,
-    trialDays: 30,
-    features: {
-      maxDevices: 999999, // Ilimitado
-      maxGeofences: 999999, // Ilimitado
-      maxSharedUsers: 999999, // Ilimitado
-      historyRetentionDays: 999999, // Ilimitado
-
-      emailNotifications: true,
-      pushNotifications: true,
-      whatsappNotifications: true,
-      smsNotifications: true,
-
-      basicAlerts: true,
-      advancedAlerts: true,
-      sosButton: true,
-      nightMode: true,
-
-      basicReports: true,
-      advancedReports: true,
-      whiteLabelReports: true,
-      scheduledReports: true,
-
-      driverManagement: true,
-      tripManagement: true,
-      fuelManagement: true,
-      predictiveMaintenance: true,
-      remoteControl: true,
-
-      aiPredictions: true, // Avanzado
-      routeOptimization: true,
-      anomalyDetection: true,
-      driverGamification: true,
-      savingsCalculator: true,
-
-      apiAccess: true,
-      apiRequestsPerMonth: 999999, // Ilimitado
-      webhooks: true,
-      thirdPartyIntegrations: true, // Todas las integraciones
-
-      supportLevel: 'dedicated',
-      supportResponseTime: '< 4 horas',
-
-      whiteLabel: true,
-      multiTenant: true,
-      dashcamCloud: true,
-      dashcamStorageGB: 100,
-    },
-    pricing: {
-      monthlyPricePerDevice: 7.99,
-      yearlyPricePerDevice: 79.90, // ~2 meses gratis
-      currency: 'MXN',
-      stripePriceIdMonthly: 'price_enterprise_monthly',
-      stripePriceIdYearly: 'price_enterprise_yearly',
-      volumeDiscounts: [
-        { minDevices: 25, discountPercent: 10 },
-        { minDevices: 50, discountPercent: 15 },
-        { minDevices: 100, discountPercent: 20 },
-        { minDevices: 200, discountPercent: 25 },
-        { minDevices: 500, discountPercent: 30 }, // Custom pricing
+        { minDevices: 25, discountPercent: 10 }, // RD$1,349/dispositivo
+        { minDevices: 50, discountPercent: 20 }, // RD$1,199/dispositivo
+        { minDevices: 100, discountPercent: 33 }, // RD$999/dispositivo
       ],
     },
   },
