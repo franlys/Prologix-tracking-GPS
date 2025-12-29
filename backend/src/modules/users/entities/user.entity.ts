@@ -18,6 +18,11 @@ export enum SubscriptionPlan {
   PRO = 'PRO',
 }
 
+export enum GpsProvider {
+  GPS_TRACE = 'GPS_TRACE',
+  TRACCAR = 'TRACCAR',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -48,6 +53,16 @@ export class User {
 
   @Column({ nullable: true })
   gpsTraceUserId: string;
+
+  @Column({ nullable: true })
+  traccarUserId: string;
+
+  @Column({
+    type: 'enum',
+    enum: GpsProvider,
+    default: GpsProvider.GPS_TRACE,
+  })
+  gpsProvider: GpsProvider;
 
   @Column({ nullable: true })
   phoneNumber: string;

@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import {
   GpsTraceService,
   GpsTraceDevice,
   GpsTracePosition,
   GpsTraceHistoryPoint,
 } from '../../integrations/gps-trace/gps-trace.service';
+import { TraccarService } from '../../integrations/traccar/traccar.service';
 import { UsersService } from '../users/users.service';
+import { GpsProvider } from '../users/entities/user.entity';
 
 // Extended device interface with position data for frontend
 export interface DeviceWithPosition extends GpsTraceDevice {
@@ -20,64 +22,139 @@ export interface DeviceWithPosition extends GpsTraceDevice {
 
 @Injectable()
 export class DevicesService {
+  private readonly logger = new Logger(DevicesService.name);
+
   constructor(
     private gpsTraceService: GpsTraceService,
+    private traccarService: TraccarService,
     private usersService: UsersService,
   ) {}
 
   async getDevices(prologixUserId: string): Promise<DeviceWithPosition[]> {
     const user = await this.usersService.findById(prologixUserId);
 
+    this.logger.log(
+      `Fetching devices for user ${user.email} using provider: ${user.gpsProvider}`
+    );
+
+    // Strategy Pattern: Choose provider based on user configuration
+    if (user.gpsProvider === GpsProvider.TRACCAR) {
+      return this.getDevicesFromTraccar(user);
+    } else if (user.gpsProvider === GpsProvider.GPS_TRACE) {
+      return this.getDevicesFromGpsTrace(user);
+    }
+
+    // Fallback to mock data if no provider configured
+    return this.getMockDevices();
+  }
+
+  private async getDevicesFromTraccar(user: any): Promise<DeviceWithPosition[]> {
+    if (!user.traccarUserId) {
+      this.logger.warn(
+        `User ${user.email} configured for Traccar but no traccarUserId set`
+      );
+      return this.getMockDevices();
+    }
+
+    try {
+      const traccarUserId = parseInt(user.traccarUserId);
+      const devices = await this.traccarService.getDevices(traccarUserId);
+      const deviceIds = devices.map((d) => d.id);
+      const positions = await this.traccarService.getPositions(deviceIds);
+
+      return devices.map((device) => {
+        const position = positions.find((p) => p.deviceId === device.id);
+        const isOnline = this.isDeviceOnline(device.lastUpdate);
+
+        return {
+          id: device.id.toString(),
+          name: device.name,
+          imei: device.uniqueId,
+          type: device.category || 'gps',
+          status: isOnline ? 'online' : 'offline',
+          lastPosition: position
+            ? {
+                lat: position.latitude.toFixed(6),
+                lng: position.longitude.toFixed(6),
+                speed: Math.round(position.speed * 1.852), // knots to km/h
+                timestamp: position.deviceTime,
+              }
+            : undefined,
+          online: isOnline,
+        };
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error fetching devices from Traccar for user ${user.email}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  private async getDevicesFromGpsTrace(user: any): Promise<DeviceWithPosition[]> {
     if (!user.gpsTraceUserId) {
-      // Return mock data for testing when GPS-Trace is not configured
-      const mockDevices: DeviceWithPosition[] = [
-        {
-          id: 'device-001',
-          name: 'Vehículo Demo 1',
-          imei: '123456789012345',
-          type: 'gps',
-          status: 'online',
-          lastPosition: {
-            lat: '18.4861',
-            lng: '-69.9312',
-            speed: 45,
-            timestamp: new Date().toISOString(),
-          },
-          online: true,
-        },
-        {
-          id: 'device-002',
-          name: 'Vehículo Demo 2',
-          imei: '123456789012346',
-          type: 'gps',
-          status: 'online',
-          lastPosition: {
-            lat: '18.4900',
-            lng: '-69.9400',
-            speed: 30,
-            timestamp: new Date().toISOString(),
-          },
-          online: true,
-        },
-        {
-          id: 'device-003',
-          name: 'Vehículo Demo 3',
-          imei: '123456789012347',
-          type: 'gps',
-          status: 'offline',
-          lastPosition: {
-            lat: '18.4750',
-            lng: '-69.9200',
-            speed: 0,
-            timestamp: new Date().toISOString(),
-          },
-          online: false,
-        },
-      ];
-      return mockDevices;
+      this.logger.warn(
+        `User ${user.email} configured for GPS-Trace but no gpsTraceUserId set`
+      );
+      return this.getMockDevices();
     }
 
     return this.gpsTraceService.getDevices(user.gpsTraceUserId);
+  }
+
+  private getMockDevices(): DeviceWithPosition[] {
+    return [
+      {
+        id: 'device-001',
+        name: 'Vehículo Demo 1',
+        imei: '123456789012345',
+        type: 'gps',
+        status: 'online',
+        lastPosition: {
+          lat: '18.4861',
+          lng: '-69.9312',
+          speed: 45,
+          timestamp: new Date().toISOString(),
+        },
+        online: true,
+      },
+      {
+        id: 'device-002',
+        name: 'Vehículo Demo 2',
+        imei: '123456789012346',
+        type: 'gps',
+        status: 'online',
+        lastPosition: {
+          lat: '18.4900',
+          lng: '-69.9400',
+          speed: 30,
+          timestamp: new Date().toISOString(),
+        },
+        online: true,
+      },
+      {
+        id: 'device-003',
+        name: 'Vehículo Demo 3',
+        imei: '123456789012347',
+        type: 'gps',
+        status: 'offline',
+        lastPosition: {
+          lat: '18.4750',
+          lng: '-69.9200',
+          speed: 0,
+          timestamp: new Date().toISOString(),
+        },
+        online: false,
+      },
+    ];
+  }
+
+  private isDeviceOnline(lastUpdate: string): boolean {
+    const lastUpdateDate = new Date(lastUpdate);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - lastUpdateDate.getTime()) / 1000 / 60;
+    return diffMinutes < 30; // Consider online if updated in last 30 minutes
   }
 
   async getDeviceById(
