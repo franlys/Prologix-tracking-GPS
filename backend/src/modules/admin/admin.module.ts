@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminController } from './admin.controller';
+import { AdminSetupController } from './admin-setup.controller';
 import { AdminService } from './admin.service';
 import { UserMigrationService } from './services/user-migration.service';
 import { UsersModule } from '../users/users.module';
@@ -17,7 +18,7 @@ import { User } from '../users/entities/user.entity';
     TraccarModule,
     GpsTraceModule,
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AdminSetupController],
   providers: [AdminService, UserMigrationService],
   exports: [UserMigrationService],
 })

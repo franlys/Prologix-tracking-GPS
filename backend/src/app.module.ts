@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { InstallersModule } from './modules/installers/installers.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PositionsModule } from './modules/positions/positions.module';
@@ -30,6 +31,7 @@ import { CommonModule } from './common/common.module';
     UsersModule,
     DevicesModule,
     AdminModule,
+    InstallersModule,
     NotificationsModule,
     SubscriptionsModule,
     PositionsModule,

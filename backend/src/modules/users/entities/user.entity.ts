@@ -67,6 +67,9 @@ export class User {
   @Column({ nullable: true })
   phoneNumber: string;
 
+  @Column({ name: 'installer_id', nullable: true })
+  installerId: string;
+
   @Column({ default: true })
   isActive: boolean;
 
