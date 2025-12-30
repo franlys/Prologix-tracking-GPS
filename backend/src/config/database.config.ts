@@ -1,4 +1,5 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 
 export const databaseConfig = (): TypeOrmModuleOptions => {
   // Si existe DATABASE_URL (Railway, Heroku, etc.), usarla
@@ -26,3 +27,16 @@ export const databaseConfig = (): TypeOrmModuleOptions => {
     logging: process.env.NODE_ENV === 'development',
   };
 };
+
+// DataSource para TypeORM CLI (migraciones)
+const dataSourceOptions: DataSourceOptions = {
+  type: 'postgres',
+  url: process.env.DATABASE_URL,
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+  synchronize: false,
+  logging: process.env.NODE_ENV === 'development',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+};
+
+export default new DataSource(dataSourceOptions);
