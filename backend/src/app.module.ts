@@ -8,6 +8,7 @@ import { DevicesModule } from './modules/devices/devices.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { PositionsModule } from './modules/positions/positions.module';
 import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
     AdminModule,
     NotificationsModule,
     SubscriptionsModule,
+    PositionsModule,
     GpsTraceModule,
   ],
 })
