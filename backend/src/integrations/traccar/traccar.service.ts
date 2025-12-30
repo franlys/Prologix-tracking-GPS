@@ -393,6 +393,13 @@ export class TraccarService {
     }
   }
 
+  /**
+   * Get server (alias for getServerInfo)
+   */
+  async getServer(): Promise<any> {
+    return this.getServerInfo();
+  }
+
   // ==================== ERROR HANDLING ====================
 
   private handleError(error: any, message: string): never {
