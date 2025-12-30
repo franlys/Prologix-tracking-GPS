@@ -12,7 +12,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PositionsModule } from './modules/positions/positions.module';
 import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
-import { CacheService } from './common/services/cache.service';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -25,6 +25,7 @@ import { CacheService } from './common/services/cache.service';
       isGlobal: true,
       useFactory: cacheConfig,
     }),
+    CommonModule,
     AuthModule,
     UsersModule,
     DevicesModule,
@@ -34,7 +35,5 @@ import { CacheService } from './common/services/cache.service';
     PositionsModule,
     GpsTraceModule,
   ],
-  providers: [CacheService],
-  exports: [CacheService],
 })
 export class AppModule {}
