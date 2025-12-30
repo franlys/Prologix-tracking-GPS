@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
 import { databaseConfig } from './config/database.config';
+import { cacheConfig } from './config/cache.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
@@ -10,6 +12,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PositionsModule } from './modules/positions/positions.module';
 import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
+import { CacheService } from './common/services/cache.service';
 
 @Module({
   imports: [
@@ -18,6 +21,10 @@ import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
       envFilePath: '.env',
     }),
     TypeOrmModule.forRoot(databaseConfig()),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: cacheConfig,
+    }),
     AuthModule,
     UsersModule,
     DevicesModule,
@@ -27,5 +34,7 @@ import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
     PositionsModule,
     GpsTraceModule,
   ],
+  providers: [CacheService],
+  exports: [CacheService],
 })
 export class AppModule {}

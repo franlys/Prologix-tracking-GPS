@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan } from 'typeorm';
 import { GpsPosition } from '../entities/gps-position.entity';
+import { CacheService } from '../../../common/services/cache.service';
 
 export interface PositionQuery {
   deviceId?: string;
@@ -20,6 +21,14 @@ export interface RoutePoint {
   address?: string;
 }
 
+// Cache TTL constants (in milliseconds)
+const CACHE_TTL = {
+  LATEST_POSITION: 30 * 1000,      // 30 seconds
+  USER_POSITIONS: 30 * 1000,       // 30 seconds
+  ROUTE: 5 * 60 * 1000,            // 5 minutes
+  SUMMARY: 10 * 60 * 1000,         // 10 minutes
+};
+
 @Injectable()
 export class PositionsQueryService {
   private readonly logger = new Logger(PositionsQueryService.name);
@@ -27,44 +36,61 @@ export class PositionsQueryService {
   constructor(
     @InjectRepository(GpsPosition)
     private positionsRepo: Repository<GpsPosition>,
+    private cacheService: CacheService,
   ) {}
 
   /**
-   * Get latest position for a device
+   * Get latest position for a device (with Redis cache)
    */
   async getLatestPosition(deviceId: string): Promise<GpsPosition | null> {
-    return this.positionsRepo.findOne({
-      where: { deviceId },
-      order: { timestamp: 'DESC' },
-    });
+    const cacheKey = `position:latest:${deviceId}`;
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        return this.positionsRepo.findOne({
+          where: { deviceId },
+          order: { timestamp: 'DESC' },
+        });
+      },
+      CACHE_TTL.LATEST_POSITION,
+    );
   }
 
   /**
-   * Get latest positions for all devices of a user
+   * Get latest positions for all devices of a user (with Redis cache)
    */
   async getLatestPositionsForUser(userId: string): Promise<GpsPosition[]> {
-    // Subquery to get latest timestamp per device
-    const subQuery = this.positionsRepo
-      .createQueryBuilder('sub')
-      .select('sub.deviceId', 'deviceId')
-      .addSelect('MAX(sub.timestamp)', 'maxTimestamp')
-      .where('sub.userId = :userId', { userId })
-      .groupBy('sub.deviceId');
+    const cacheKey = `positions:user:${userId}:latest`;
 
-    // Main query to get full position data
-    const positions = await this.positionsRepo
-      .createQueryBuilder('pos')
-      .innerJoin(
-        '(' + subQuery.getQuery() + ')',
-        'latest',
-        'pos.deviceId = latest.deviceId AND pos.timestamp = latest.maxTimestamp'
-      )
-      .where('pos.userId = :userId', { userId })
-      .setParameters(subQuery.getParameters())
-      .orderBy('pos.timestamp', 'DESC')
-      .getMany();
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        // Subquery to get latest timestamp per device
+        const subQuery = this.positionsRepo
+          .createQueryBuilder('sub')
+          .select('sub.deviceId', 'deviceId')
+          .addSelect('MAX(sub.timestamp)', 'maxTimestamp')
+          .where('sub.userId = :userId', { userId })
+          .groupBy('sub.deviceId');
 
-    return positions;
+        // Main query to get full position data
+        const positions = await this.positionsRepo
+          .createQueryBuilder('pos')
+          .innerJoin(
+            '(' + subQuery.getQuery() + ')',
+            'latest',
+            'pos.deviceId = latest.deviceId AND pos.timestamp = latest.maxTimestamp'
+          )
+          .where('pos.userId = :userId', { userId })
+          .setParameters(subQuery.getParameters())
+          .orderBy('pos.timestamp', 'DESC')
+          .getMany();
+
+        return positions;
+      },
+      CACHE_TTL.USER_POSITIONS,
+    );
   }
 
   /**
@@ -297,5 +323,39 @@ export class PositionsQueryService {
     `);
 
     return stats[0];
+  }
+
+  /**
+   * Invalidate cache for a specific device
+   * Called when new position is saved
+   */
+  async invalidateDeviceCache(deviceId: string, userId: string): Promise<void> {
+    // Invalidate device-specific cache
+    await this.cacheService.del(`position:latest:${deviceId}`);
+
+    // Invalidate user's positions cache
+    await this.cacheService.del(`positions:user:${userId}:latest`);
+
+    this.logger.debug(`Cache invalidated for device ${deviceId}`);
+  }
+
+  /**
+   * Invalidate all caches for a user
+   */
+  async invalidateUserCache(userId: string): Promise<void> {
+    // Delete all position caches for this user
+    await this.cacheService.delPattern(`positions:user:${userId}:*`);
+
+    this.logger.debug(`Cache invalidated for user ${userId}`);
+  }
+
+  /**
+   * Invalidate all position caches
+   */
+  async invalidateAllCaches(): Promise<void> {
+    await this.cacheService.delPattern('position:*');
+    await this.cacheService.delPattern('positions:*');
+
+    this.logger.log('All position caches invalidated');
   }
 }

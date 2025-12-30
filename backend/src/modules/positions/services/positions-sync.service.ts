@@ -8,6 +8,7 @@ import { GpsTraceService } from '../../../integrations/gps-trace/gps-trace.servi
 import { UsersService } from '../../users/users.service';
 import { GpsProvider } from '../../users/entities/user.entity';
 import { PositionsGateway } from '../gateways/positions.gateway';
+import { PositionsQueryService } from './positions-query.service';
 
 @Injectable()
 export class PositionsSyncService {
@@ -22,6 +23,8 @@ export class PositionsSyncService {
     private usersService: UsersService,
     @Inject(forwardRef(() => PositionsGateway))
     private positionsGateway: PositionsGateway,
+    @Inject(forwardRef(() => PositionsQueryService))
+    private positionsQuery: PositionsQueryService,
   ) {}
 
   /**
@@ -259,6 +262,20 @@ export class PositionsSyncService {
         // Don't fail position save if WebSocket emission fails
         this.logger.warn(
           `WebSocket emission failed for device ${position.deviceId}: ${wsError.message}`,
+        );
+      }
+
+      // ========== INVALIDATE REDIS CACHE ==========
+      // Invalidate cache for this device and user
+      try {
+        await this.positionsQuery.invalidateDeviceCache(
+          position.deviceId,
+          position.userId,
+        );
+      } catch (cacheError) {
+        // Don't fail position save if cache invalidation fails
+        this.logger.warn(
+          `Cache invalidation failed for device ${position.deviceId}: ${cacheError.message}`,
         );
       }
 
