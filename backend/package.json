@@ -7,6 +7,11 @@
     "start": "node dist/main.js",
     "start:dev": "nodemon --watch src --exec ts-node src/main.ts",
     "start:prod": "node dist/main.js",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:run": "npm run typeorm migration:run -- -d src/config/database.config.ts",
+    "migration:generate": "npm run typeorm migration:generate -- -d src/config/database.config.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/config/database.config.ts",
+    "migrate:prod": "node run-migrations-production.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
