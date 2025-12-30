@@ -23,6 +23,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.4.20",
     "@nestjs/platform-socket.io": "^10.4.20",
+    "@nestjs/schedule": "^6.1.0",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^10.4.20",
     "@sendgrid/mail": "^8.1.6",
