@@ -5,6 +5,7 @@ import { PositionsSyncService } from './services/positions-sync.service';
 import { PositionsCleanupService } from './services/positions-cleanup.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from '../users/entities/user.entity';
 
 @Controller('positions')
 @UseGuards(JwtAuthGuard)
@@ -94,7 +95,7 @@ export class PositionsController {
    * GET /positions/admin/sync-stats
    */
   @Get('admin/sync-stats')
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @UseGuards(RolesGuard)
   async getSyncStats() {
     return this.positionsSync.getSyncStats();
@@ -105,7 +106,7 @@ export class PositionsController {
    * GET /positions/admin/sync
    */
   @Get('admin/sync')
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @UseGuards(RolesGuard)
   async manualSync(@Query('userId') userId?: string) {
     const synced = await this.positionsSync.manualSync(userId);
@@ -121,7 +122,7 @@ export class PositionsController {
    * GET /positions/admin/cleanup-stats
    */
   @Get('admin/cleanup-stats')
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @UseGuards(RolesGuard)
   async getCleanupStats() {
     return this.positionsCleanup.getCleanupStats();
@@ -132,7 +133,7 @@ export class PositionsController {
    * GET /positions/admin/storage-stats
    */
   @Get('admin/storage-stats')
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @UseGuards(RolesGuard)
   async getStorageStats() {
     return this.positionsQuery.getStorageStats();

@@ -59,8 +59,9 @@ export class CacheService {
    */
   async delPattern(pattern: string): Promise<void> {
     try {
-      // Get Redis store
-      const store = this.cacheManager.store as any;
+      // Get Redis store - using stores array in v6
+      const stores = (this.cacheManager as any).stores;
+      const store = stores ? stores[0] : null;
 
       if (store.client && typeof store.client.keys === 'function') {
         // Redis store - use pattern matching
@@ -83,7 +84,11 @@ export class CacheService {
    */
   async reset(): Promise<void> {
     try {
-      await this.cacheManager.reset();
+      // cache-manager v6 doesn't have reset(), manually clear keys
+      const stores = (this.cacheManager as any).stores;
+      if (stores && stores[0] && stores[0].reset) {
+        await stores[0].reset();
+      }
       this.logger.log('Cache cleared');
     } catch (error) {
       this.logger.error('Cache RESET error:', error.message);
@@ -132,7 +137,8 @@ export class CacheService {
    */
   async getStats(): Promise<any> {
     try {
-      const store = this.cacheManager.store as any;
+      const stores = (this.cacheManager as any).stores;
+      const store = stores ? stores[0] : null;
 
       if (store.client && typeof store.client.info === 'function') {
         // Redis store - get info
