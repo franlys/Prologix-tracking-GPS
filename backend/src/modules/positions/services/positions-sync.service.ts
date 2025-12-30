@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -7,6 +7,7 @@ import { TraccarService } from '../../../integrations/traccar/traccar.service';
 import { GpsTraceService } from '../../../integrations/gps-trace/gps-trace.service';
 import { UsersService } from '../../users/users.service';
 import { GpsProvider } from '../../users/entities/user.entity';
+import { PositionsGateway } from '../gateways/positions.gateway';
 
 @Injectable()
 export class PositionsSyncService {
@@ -19,6 +20,8 @@ export class PositionsSyncService {
     private traccarService: TraccarService,
     private gpsTraceService: GpsTraceService,
     private usersService: UsersService,
+    @Inject(forwardRef(() => PositionsGateway))
+    private positionsGateway: PositionsGateway,
   ) {}
 
   /**
@@ -224,6 +227,40 @@ export class PositionsSyncService {
       // Create and save new position
       const position = this.positionsRepo.create(data);
       await this.positionsRepo.save(position);
+
+      // ========== REAL-TIME UPDATE VIA WEBSOCKET ==========
+      // Emit position update to connected clients
+      try {
+        this.positionsGateway.emitPositionUpdate(position.userId, {
+          deviceId: position.deviceId,
+          latitude: Number(position.latitude),
+          longitude: Number(position.longitude),
+          speed: Number(position.speed) || 0,
+          course: Number(position.course) || 0,
+          altitude: Number(position.altitude) || 0,
+          timestamp: position.timestamp.toISOString(),
+          address: position.address,
+          batteryLevel: position.batteryLevel,
+          satellites: position.satellites,
+          ignition: position.ignition,
+          motion: position.motion,
+        });
+
+        // Also emit to device-specific subscribers
+        this.positionsGateway.emitDevicePosition(position.deviceId, {
+          deviceId: position.deviceId,
+          latitude: Number(position.latitude),
+          longitude: Number(position.longitude),
+          speed: Number(position.speed) || 0,
+          course: Number(position.course) || 0,
+          timestamp: position.timestamp.toISOString(),
+        });
+      } catch (wsError) {
+        // Don't fail position save if WebSocket emission fails
+        this.logger.warn(
+          `WebSocket emission failed for device ${position.deviceId}: ${wsError.message}`,
+        );
+      }
 
       return true;
     } catch (error) {
