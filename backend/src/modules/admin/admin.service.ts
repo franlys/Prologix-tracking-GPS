@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { DevicesService } from '../devices/devices.service';
+import { UserRole } from '../users/entities/user.entity';
 
 @Injectable()
 export class AdminService {
@@ -58,6 +59,22 @@ export class AdminService {
       message: 'GPS-Trace User ID updated successfully',
       userId,
       gpsTraceUserId,
+    };
+  }
+
+  async updateUserRole(userId: string, role: UserRole) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.usersService.updateUserRole(userId, role);
+
+    return {
+      message: 'User role updated successfully',
+      userId,
+      role,
     };
   }
 

@@ -42,6 +42,14 @@ export class AdminController {
     return this.adminService.updateUserGpsTrace(userId, dto.gpsTraceUserId);
   }
 
+  @Patch('users/:userId/role')
+  async updateUserRole(
+    @Param('userId') userId: string,
+    @Body() body: { role: UserRole },
+  ) {
+    return this.adminService.updateUserRole(userId, body.role);
+  }
+
   @Get('users/:userId/devices')
   async getUserDevices(@Param('userId') userId: string) {
     return this.adminService.getUserDevices(userId);
