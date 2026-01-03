@@ -24,10 +24,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
+    // ALWAYS use the current role from the database, not from the token
+    // This ensures that role changes take effect immediately
     return {
       userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
+      email: user.email,
+      role: user.role, // ✅ Get role from DB, not from token
       subscriptionPlan: user.subscriptionPlan,
     };
   }
