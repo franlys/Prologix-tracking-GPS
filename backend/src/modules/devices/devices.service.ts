@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import {
   GpsTraceService,
   GpsTraceDevice,
@@ -8,6 +13,7 @@ import {
 import { TraccarService } from '../../integrations/traccar/traccar.service';
 import { UsersService } from '../users/users.service';
 import { GpsProvider } from '../users/entities/user.entity';
+import { SmsService } from './sms.service';
 
 // Extended device interface with position data for frontend
 export interface DeviceWithPosition extends GpsTraceDevice {
@@ -28,6 +34,7 @@ export class DevicesService {
     private gpsTraceService: GpsTraceService,
     private traccarService: TraccarService,
     private usersService: UsersService,
+    private smsService: SmsService,
   ) {}
 
   async getDevices(prologixUserId: string): Promise<DeviceWithPosition[]> {
@@ -245,5 +252,62 @@ export class DevicesService {
     }
 
     return this.gpsTraceService.getHistory(deviceId, startDate, endDate);
+  }
+
+  async sendSmsCommand(
+    deviceId: string,
+    command: string,
+    prologixUserId: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    messageId?: string;
+  }> {
+    this.logger.log(
+      `Sending SMS command to device ${deviceId} for user ${prologixUserId}`,
+    );
+
+    // Verify device belongs to user
+    const device = await this.getDeviceById(deviceId, prologixUserId);
+
+    // TODO: Almacenar número de teléfono del GPS en la base de datos
+    // Por ahora, usamos un número de prueba
+    const devicePhoneNumber = '+18091234567'; // Este debería venir de la configuración del dispositivo
+
+    if (!devicePhoneNumber) {
+      throw new BadRequestException(
+        'Este dispositivo no tiene un número de teléfono configurado. Contacta a tu instalador para configurarlo.',
+      );
+    }
+
+    // Validar el número de teléfono
+    if (!this.smsService.validatePhoneNumber(devicePhoneNumber)) {
+      throw new BadRequestException(
+        'El número de teléfono del dispositivo no es válido',
+      );
+    }
+
+    // Normalizar el número de teléfono
+    const normalizedPhone = this.smsService.normalizePhoneNumber(devicePhoneNumber);
+
+    // Enviar el comando SMS
+    const result = await this.smsService.sendSmsCommand({
+      to: normalizedPhone,
+      message: command,
+      deviceId: deviceId,
+      deviceName: device.name,
+    });
+
+    if (!result.success) {
+      throw new BadRequestException(
+        `No se pudo enviar el comando SMS: ${result.error}`,
+      );
+    }
+
+    return {
+      success: true,
+      message: `Comando SMS enviado correctamente a ${device.name}`,
+      messageId: result.messageId,
+    };
   }
 }

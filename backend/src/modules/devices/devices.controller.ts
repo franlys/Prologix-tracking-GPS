@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Param,
   Query,
   UseGuards,
@@ -13,6 +15,7 @@ import { RequirePlan } from '../auth/decorators/require-plan.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SubscriptionPlan } from '../users/entities/user.entity';
 import { GetHistoryDto } from './dto/get-history.dto';
+import { SendSmsDto } from './dto/send-sms.dto';
 
 @Controller('devices')
 @UseGuards(JwtAuthGuard)
@@ -46,5 +49,18 @@ export class DevicesController {
     const endDate = new Date(query.endDate);
 
     return this.devicesService.getHistory(id, startDate, endDate, user.userId);
+  }
+
+  @Post(':id/sms')
+  async sendSmsCommand(
+    @Param('id') id: string,
+    @Body(ValidationPipe) sendSmsDto: SendSmsDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.devicesService.sendSmsCommand(
+      id,
+      sendSmsDto.command,
+      user.userId,
+    );
   }
 }
