@@ -103,4 +103,37 @@ export class AdminService {
       deviceCount: devices.length,
     };
   }
+
+  async getAllDevices() {
+    // Get all users
+    const users = await this.usersService.findAll();
+
+    // Get devices for each user and combine them
+    const allDevices = [];
+
+    for (const user of users) {
+      if (user.gpsTraceUserId) {
+        try {
+          const devices = await this.devicesService.getDevices(user.id);
+
+          // Add user info to each device
+          const devicesWithUser = devices.map(device => ({
+            ...device,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+            },
+          }));
+
+          allDevices.push(...devicesWithUser);
+        } catch (error) {
+          console.error(`Error fetching devices for user ${user.id}:`, error);
+        }
+      }
+    }
+
+    return allDevices;
+  }
 }

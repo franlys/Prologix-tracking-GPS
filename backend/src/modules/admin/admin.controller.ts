@@ -55,6 +55,11 @@ export class AdminController {
     return this.adminService.getUserDevices(userId);
   }
 
+  @Get('devices')
+  async getAllDevices() {
+    return this.adminService.getAllDevices();
+  }
+
   // ============================================
   // MIGRATION ENDPOINTS
   // ============================================
