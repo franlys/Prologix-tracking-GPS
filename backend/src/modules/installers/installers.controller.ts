@@ -24,6 +24,30 @@ export class InstallersController {
   ) {}
 
   // ============================================
+  // ENDPOINTS PARA INSTALADORES (Sus propios datos)
+  // ============================================
+  // IMPORTANTE: Estos endpoints deben estar ANTES de los endpoints con :installerId
+  // para evitar que 'me' sea interpretado como un ID de instalador
+
+  @Get('me/stats')
+  @Roles(UserRole.INSTALLER)
+  async getMyStats(@Request() req) {
+    return this.installersService.getInstallerStats(req.user.userId);
+  }
+
+  @Get('me/clients')
+  @Roles(UserRole.INSTALLER)
+  async getMyClients(@Request() req) {
+    return this.installersService.getInstallerClients(req.user.userId);
+  }
+
+  @Get('me/commissions')
+  @Roles(UserRole.INSTALLER)
+  async getMyCommissions(@Request() req) {
+    return this.commissionsService.getInstallerCommissions(req.user.userId);
+  }
+
+  // ============================================
   // ENDPOINTS PARA ADMIN
   // ============================================
 
@@ -128,27 +152,5 @@ export class InstallersController {
       body.subscriptionPlan,
       body.subscriptionAmount,
     );
-  }
-
-  // ============================================
-  // ENDPOINTS PARA INSTALADORES (Sus propios datos)
-  // ============================================
-
-  @Get('me/stats')
-  @Roles(UserRole.INSTALLER)
-  async getMyStats(@Request() req) {
-    return this.installersService.getInstallerStats(req.user.userId);
-  }
-
-  @Get('me/clients')
-  @Roles(UserRole.INSTALLER)
-  async getMyClients(@Request() req) {
-    return this.installersService.getInstallerClients(req.user.userId);
-  }
-
-  @Get('me/commissions')
-  @Roles(UserRole.INSTALLER)
-  async getMyCommissions(@Request() req) {
-    return this.commissionsService.getInstallerCommissions(req.user.userId);
   }
 }
