@@ -26,6 +26,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // ALWAYS use the current role from the database, not from the token
     // This ensures that role changes take effect immediately
+    console.log('🔐 JWT Strategy - User from DB:', {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tokenRole: payload.role
+    });
+
     return {
       userId: payload.sub,
       email: user.email,
