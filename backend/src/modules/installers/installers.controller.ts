@@ -16,7 +16,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
 @Controller('installers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class InstallersController {
   constructor(
     private installersService: InstallersService,
@@ -29,28 +29,24 @@ export class InstallersController {
 
   @Get()
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   async getAllInstallers() {
     return this.installersService.getAllInstallers();
   }
 
   @Get(':installerId/clients')
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   async getInstallerClients(@Param('installerId') installerId: string) {
     return this.installersService.getInstallerClients(installerId);
   }
 
   @Get(':installerId/stats')
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   async getInstallerStats(@Param('installerId') installerId: string) {
     return this.installersService.getInstallerStats(installerId);
   }
 
   @Post('link-client')
   @Roles(UserRole.ADMIN, UserRole.INSTALLER)
-  @UseGuards(RolesGuard)
   async linkClient(
     @Body() body: { clientId: string; installerId: string },
     @Request() req,
@@ -73,14 +69,12 @@ export class InstallersController {
 
   @Get('commissions/summary')
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   async getCommissionsSummary() {
     return this.commissionsService.getCommissionsSummary();
   }
 
   @Get(':installerId/commissions')
   @Roles(UserRole.ADMIN, UserRole.INSTALLER)
-  @UseGuards(RolesGuard)
   async getInstallerCommissions(
     @Param('installerId') installerId: string,
     @Request() req,
@@ -96,7 +90,6 @@ export class InstallersController {
 
   @Get(':installerId/commissions/pending')
   @Roles(UserRole.ADMIN, UserRole.INSTALLER)
-  @UseGuards(RolesGuard)
   async getPendingCommissions(
     @Param('installerId') installerId: string,
     @Request() req,
@@ -111,7 +104,6 @@ export class InstallersController {
 
   @Patch('commissions/:commissionId/mark-paid')
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   async markCommissionAsPaid(
     @Param('commissionId') commissionId: string,
     @Body() body: { notes?: string },
@@ -121,7 +113,6 @@ export class InstallersController {
 
   @Post('commissions/create')
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   async createCommission(
     @Body()
     body: {
@@ -145,21 +136,18 @@ export class InstallersController {
 
   @Get('me/stats')
   @Roles(UserRole.INSTALLER)
-  @UseGuards(RolesGuard)
   async getMyStats(@Request() req) {
     return this.installersService.getInstallerStats(req.user.userId);
   }
 
   @Get('me/clients')
   @Roles(UserRole.INSTALLER)
-  @UseGuards(RolesGuard)
   async getMyClients(@Request() req) {
     return this.installersService.getInstallerClients(req.user.userId);
   }
 
   @Get('me/commissions')
   @Roles(UserRole.INSTALLER)
-  @UseGuards(RolesGuard)
   async getMyCommissions(@Request() req) {
     return this.commissionsService.getInstallerCommissions(req.user.userId);
   }
