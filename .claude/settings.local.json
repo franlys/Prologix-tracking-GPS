@@ -70,7 +70,10 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTg4ZmUyNC05YjgyLTQzMDctYjllZi1hOTJjY2JkMDA1M2UiLCJlbWFpbCI6ImVsbWFlc3Ryb2dvbnphbGV6MzBAZ21haWwuY29tIiwicm9sZSI6IklOU1RBTExFUiIsImlhdCI6MTc2NzU3OTQxMSwiZXhwIjoxNzY4MTg0MjExfQ.XjpkFnoatdEDYHU0htwPKv-L7sZ_Yh1YfpYcaUYZgYc\")",
       "Bash(python -m json.tool:*)",
       "Bash(npm run web:*)",
-      "Bash(Select-String -Pattern \"register|role\")"
+      "Bash(Select-String -Pattern \"register|role\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: Update subscription plans to use correct enum values\n\n- Updated SubscriptionGuard to use new plan hierarchy \\(FREE, BASICO, PROFESIONAL, EMPRESARIAL\\)\n- Fixed import statements to use subscription entity instead of deprecated user entity\n- Changed history endpoint to require BASICO plan instead of non-existent PLUS plan\n- This fixes 403 errors when users with PROFESIONAL plan try to access history\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(node cleanup-devices-simple.js:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

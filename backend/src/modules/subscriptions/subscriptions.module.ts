@@ -4,6 +4,7 @@ import { SubscriptionsController } from './subscriptions.controller';
 import { WebhooksController } from './webhooks.controller';
 import { SubscriptionsService } from './services/subscriptions.service';
 import { StripeService } from './services/stripe.service';
+import { PayPalService } from './services/paypal.service';
 import { Subscription } from './entities/subscription.entity';
 import { PaymentHistory } from './entities/payment-history.entity';
 import { Referral } from './entities/referral.entity';
@@ -21,7 +22,7 @@ import { User } from '../users/entities/user.entity';
     ]),
   ],
   controllers: [SubscriptionsController, WebhooksController],
-  providers: [SubscriptionsService, StripeService],
-  exports: [SubscriptionsService, StripeService],
+  providers: [SubscriptionsService, StripeService, PayPalService],
+  exports: [SubscriptionsService, StripeService, PayPalService],
 })
 export class SubscriptionsModule {}
