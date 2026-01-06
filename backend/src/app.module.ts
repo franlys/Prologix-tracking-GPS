@@ -14,6 +14,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { PositionsModule } from './modules/positions/positions.module';
 import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
 import { CommonModule } from './common/common.module';
+import { LegalModule } from './modules/legal/legal.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { CommonModule } from './common/common.module';
     SubscriptionsModule,
     PositionsModule,
     GpsTraceModule,
+    LegalModule,
   ],
 })
 export class AppModule {}

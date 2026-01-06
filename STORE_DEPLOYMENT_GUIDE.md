@@ -4,6 +4,7 @@ Esta guía detalla paso a paso cómo llevar tu aplicación **Prologix GPS** a la
 
 ---
 
+
 ## 📋 Requisitos Previos y Costos
 
 Antes de comenzar, necesitas las cuentas de desarrollador.
