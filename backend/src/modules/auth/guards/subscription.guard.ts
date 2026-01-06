@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { SubscriptionPlan } from '../../users/entities/user.entity';
+import { SubscriptionPlan } from '../../subscriptions/entities/subscription.entity';
 
 export const REQUIRED_PLAN = 'requiredPlan';
 
@@ -30,18 +30,20 @@ export class SubscriptionGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
+    // Updated plan hierarchy: FREE < BASICO < PROFESIONAL < EMPRESARIAL
     const planHierarchy = {
-      [SubscriptionPlan.BASIC]: 0,
-      [SubscriptionPlan.PLUS]: 1,
-      [SubscriptionPlan.PRO]: 2,
+      [SubscriptionPlan.FREE]: 0,
+      [SubscriptionPlan.BASICO]: 1,
+      [SubscriptionPlan.PROFESIONAL]: 2,
+      [SubscriptionPlan.EMPRESARIAL]: 3,
     };
 
     const userPlanLevel = planHierarchy[user.subscriptionPlan];
     const requiredPlanLevel = planHierarchy[requiredPlan];
 
-    if (userPlanLevel < requiredPlanLevel) {
+    if (userPlanLevel === undefined || userPlanLevel < requiredPlanLevel) {
       throw new ForbiddenException(
-        `This feature requires ${requiredPlan} plan or higher`,
+        `This feature requires ${requiredPlan} plan or higher. Your current plan: ${user.subscriptionPlan}`,
       );
     }
 

@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../auth/guards/subscription.guard';
 import { RequirePlan } from '../auth/decorators/require-plan.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { SubscriptionPlan } from '../users/entities/user.entity';
+import { SubscriptionPlan } from '../subscriptions/entities/subscription.entity';
 import { GetHistoryDto } from './dto/get-history.dto';
 import { SendSmsDto } from './dto/send-sms.dto';
 
@@ -39,7 +39,7 @@ export class DevicesController {
 
   @Get(':id/history')
   @UseGuards(SubscriptionGuard)
-  @RequirePlan(SubscriptionPlan.PLUS)
+  @RequirePlan(SubscriptionPlan.BASICO)
   async getHistory(
     @Param('id') id: string,
     @Query(ValidationPipe) query: GetHistoryDto,
