@@ -1,283 +1,204 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { PayPalClient, CreateSubscriptionRequest, BillingPlan } from '@paypal/paypal-server-sdk';
 import { BillingPeriod, SubscriptionPlan } from '../entities/subscription.entity';
-import { calculatePriceWithVolume, getPlanConfig } from '../config/plans.config';
+import { getPlanConfig } from '../config/plans.config';
 
+/**
+ * PayPal Service - Basic implementation
+ * For full PayPal integration, use PayPal REST API directly or PayPal buttons in frontend
+ */
 @Injectable()
 export class PayPalService {
   private readonly logger = new Logger(PayPalService.name);
-  private readonly paypalClient: PayPalClient | null = null;
   private readonly isEnabled: boolean;
   private readonly mode: 'sandbox' | 'live';
+  private readonly clientId: string;
+  private readonly clientSecret: string;
+  private readonly apiBase: string;
 
   constructor() {
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    this.clientId = process.env.PAYPAL_CLIENT_ID || '';
+    this.clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
     this.mode = (process.env.PAYPAL_MODE as 'sandbox' | 'live') || 'sandbox';
+    this.isEnabled = !!(this.clientId && this.clientSecret);
 
-    this.isEnabled = !!(clientId && clientSecret);
+    this.apiBase = this.mode === 'sandbox'
+      ? 'https://api-m.sandbox.paypal.com'
+      : 'https://api-m.paypal.com';
 
     if (this.isEnabled) {
-      this.paypalClient = new PayPalClient({
-        clientId,
-        clientSecret,
-        environment: this.mode,
-      });
       this.logger.log(`💰 PayPal service initialized in ${this.mode} mode`);
     } else {
       this.logger.warn('⚠️  PayPal disabled (missing credentials)');
     }
   }
 
-  // ==================== Validaciones ====================
+  // ==================== Auth ====================
 
-  private ensureEnabled() {
-    if (!this.isEnabled || !this.paypalClient) {
+  /**
+   * Get OAuth access token
+   */
+  private async getAccessToken(): Promise<string> {
+    if (!this.isEnabled) {
       throw new BadRequestException('PayPal is not configured');
     }
-  }
 
-  // ==================== Planes de Suscripción ====================
+    const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
 
-  /**
-   * Crear un plan de suscripción en PayPal
-   */
-  async createSubscriptionPlan(
-    plan: SubscriptionPlan,
-    billingPeriod: BillingPeriod,
-  ): Promise<string> {
-    this.ensureEnabled();
-
-    const planConfig = getPlanConfig(plan);
-    const pricePerDevice = billingPeriod === BillingPeriod.MONTHLY
-      ? planConfig.pricing.monthlyPricePerDevice
-      : planConfig.pricing.yearlyPricePerDevice;
-
-    const billingCycles = [{
-      frequency: {
-        interval_unit: billingPeriod === BillingPeriod.MONTHLY ? 'MONTH' : 'YEAR',
-        interval_count: 1,
+    const response = await fetch(`${this.apiBase}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      tenure_type: 'REGULAR',
-      sequence: 1,
-      total_cycles: 0, // Indefinido
-      pricing_scheme: {
-        fixed_price: {
-          value: pricePerDevice.toString(),
-          currency_code: 'MXN',
-        },
-      },
-    }];
+      body: 'grant_type=client_credentials',
+    });
 
-    try {
-      const response = await this.paypalClient.billingPlans.create({
-        name: `${planConfig.name} - ${billingPeriod === BillingPeriod.MONTHLY ? 'Mensual' : 'Anual'}`,
-        description: planConfig.description,
-        type: 'INFINITE',
-        payment_preferences: {
-          auto_bill_outstanding: true,
-          setup_fee_failure_action: 'CONTINUE',
-          payment_failure_threshold: 3,
-        },
-        billing_cycles: billingCycles,
-      });
+    const data = await response.json();
 
-      this.logger.log(`✅ PayPal plan created: ${response.id}`);
-      return response.id;
-    } catch (error) {
-      this.logger.error('❌ Error creating PayPal plan:', error);
-      throw new BadRequestException('Failed to create PayPal subscription plan');
+    if (!response.ok) {
+      this.logger.error('Failed to get PayPal access token:', data);
+      throw new BadRequestException('Failed to authenticate with PayPal');
     }
+
+    return data.access_token;
   }
 
-  // ==================== Suscripciones ====================
+  // ==================== Orders ====================
 
   /**
-   * Crear una suscripción para un cliente
+   * Create a PayPal order
    */
-  async createSubscription(data: {
-    planId: string;
+  async createOrder(data: {
+    amount: string;
+    currency: string;
+    description: string;
     returnUrl: string;
     cancelUrl: string;
-    userId: string;
-  }): Promise<{ subscriptionId: string; approvalUrl: string }> {
-    this.ensureEnabled();
+  }): Promise<{ orderId: string; approvalUrl: string }> {
+    const accessToken = await this.getAccessToken();
 
-    try {
-      const response = await this.paypalClient.subscriptions.create({
-        plan_id: data.planId,
+    const response = await fetch(`${this.apiBase}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [
+          {
+            amount: {
+              currency_code: data.currency,
+              value: data.amount,
+            },
+            description: data.description,
+          },
+        ],
         application_context: {
           return_url: data.returnUrl,
           cancel_url: data.cancelUrl,
           brand_name: 'Prologix GPS',
           locale: 'es-MX',
           shipping_preference: 'NO_SHIPPING',
-          user_action: 'SUBSCRIBE_NOW',
+          user_action: 'PAY_NOW',
         },
-        custom_id: data.userId, // Para identificar al usuario en webhooks
-      });
+      }),
+    });
 
-      const approvalUrl = response.links.find(link => link.rel === 'approve')?.href;
+    const result = await response.json();
 
-      if (!approvalUrl) {
-        throw new BadRequestException('No approval URL returned from PayPal');
-      }
-
-      this.logger.log(`✅ PayPal subscription created: ${response.id}`);
-
-      return {
-        subscriptionId: response.id,
-        approvalUrl,
-      };
-    } catch (error) {
-      this.logger.error('❌ Error creating PayPal subscription:', error);
-      throw new BadRequestException('Failed to create PayPal subscription');
+    if (!response.ok) {
+      this.logger.error('Failed to create PayPal order:', result);
+      throw new BadRequestException('Failed to create PayPal order');
     }
+
+    const approvalUrl = result.links?.find((link: any) => link.rel === 'approve')?.href;
+
+    if (!approvalUrl) {
+      throw new BadRequestException('No approval URL returned from PayPal');
+    }
+
+    this.logger.log(`✅ PayPal order created: ${result.id}`);
+
+    return {
+      orderId: result.id,
+      approvalUrl,
+    };
   }
 
   /**
-   * Obtener detalles de una suscripción
+   * Capture a PayPal order after approval
    */
-  async getSubscription(subscriptionId: string) {
-    this.ensureEnabled();
+  async captureOrder(orderId: string): Promise<any> {
+    const accessToken = await this.getAccessToken();
 
-    try {
-      const response = await this.paypalClient.subscriptions.showDetails(subscriptionId);
-      return response;
-    } catch (error) {
-      this.logger.error(`❌ Error getting PayPal subscription ${subscriptionId}:`, error);
-      throw new BadRequestException('Failed to get PayPal subscription details');
+    const response = await fetch(`${this.apiBase}/v2/checkout/orders/${orderId}/capture`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      this.logger.error(`Failed to capture PayPal order ${orderId}:`, result);
+      throw new BadRequestException('Failed to capture PayPal order');
     }
+
+    this.logger.log(`✅ PayPal order captured: ${orderId}`);
+    return result;
   }
 
   /**
-   * Cancelar una suscripción
+   * Get order details
    */
-  async cancelSubscription(subscriptionId: string, reason?: string): Promise<void> {
-    this.ensureEnabled();
+  async getOrder(orderId: string): Promise<any> {
+    const accessToken = await this.getAccessToken();
 
-    try {
-      await this.paypalClient.subscriptions.cancel(subscriptionId, {
-        reason: reason || 'Customer requested cancellation',
-      });
+    const response = await fetch(`${this.apiBase}/v2/checkout/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-      this.logger.log(`✅ PayPal subscription cancelled: ${subscriptionId}`);
-    } catch (error) {
-      this.logger.error(`❌ Error cancelling PayPal subscription ${subscriptionId}:`, error);
-      throw new BadRequestException('Failed to cancel PayPal subscription');
+    const result = await response.json();
+
+    if (!response.ok) {
+      this.logger.error(`Failed to get PayPal order ${orderId}:`, result);
+      throw new BadRequestException('Failed to get PayPal order details');
     }
+
+    return result;
   }
 
+  // ==================== Utilities ====================
+
   /**
-   * Suspender una suscripción
+   * Calculate price for a plan
    */
-  async suspendSubscription(subscriptionId: string, reason?: string): Promise<void> {
-    this.ensureEnabled();
+  calculatePrice(plan: SubscriptionPlan, billingPeriod: BillingPeriod, deviceCount: number): string {
+    const planConfig = getPlanConfig(plan);
+    const pricePerDevice = billingPeriod === BillingPeriod.MONTHLY
+      ? planConfig.pricing.monthlyPricePerDevice
+      : planConfig.pricing.yearlyPricePerDevice;
 
-    try {
-      await this.paypalClient.subscriptions.suspend(subscriptionId, {
-        reason: reason || 'Payment failed',
-      });
-
-      this.logger.log(`✅ PayPal subscription suspended: ${subscriptionId}`);
-    } catch (error) {
-      this.logger.error(`❌ Error suspending PayPal subscription ${subscriptionId}:`, error);
-      throw new BadRequestException('Failed to suspend PayPal subscription');
-    }
+    const total = pricePerDevice * deviceCount;
+    return total.toFixed(2);
   }
 
   /**
-   * Reactivar una suscripción suspendida
-   */
-  async activateSubscription(subscriptionId: string): Promise<void> {
-    this.ensureEnabled();
-
-    try {
-      await this.paypalClient.subscriptions.activate(subscriptionId, {
-        reason: 'Customer reactivated',
-      });
-
-      this.logger.log(`✅ PayPal subscription activated: ${subscriptionId}`);
-    } catch (error) {
-      this.logger.error(`❌ Error activating PayPal subscription ${subscriptionId}:`, error);
-      throw new BadRequestException('Failed to activate PayPal subscription');
-    }
-  }
-
-  // ==================== Transacciones ====================
-
-  /**
-   * Listar transacciones de una suscripción
-   */
-  async listTransactions(subscriptionId: string, startDate: Date, endDate: Date) {
-    this.ensureEnabled();
-
-    try {
-      const response = await this.paypalClient.subscriptions.listTransactions(
-        subscriptionId,
-        startDate.toISOString(),
-        endDate.toISOString(),
-      );
-
-      return response.transactions || [];
-    } catch (error) {
-      this.logger.error(`❌ Error listing transactions for ${subscriptionId}:`, error);
-      return [];
-    }
-  }
-
-  // ==================== Webhooks ====================
-
-  /**
-   * Verificar firma de webhook de PayPal
-   */
-  async verifyWebhookSignature(payload: any, headers: any): Promise<boolean> {
-    this.ensureEnabled();
-
-    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
-
-    if (!webhookId) {
-      this.logger.warn('⚠️  PAYPAL_WEBHOOK_ID not configured, skipping verification');
-      return true; // En desarrollo, permitir sin verificación
-    }
-
-    try {
-      const response = await this.paypalClient.webhooks.verifySignature({
-        auth_algo: headers['paypal-auth-algo'],
-        cert_url: headers['paypal-cert-url'],
-        transmission_id: headers['paypal-transmission-id'],
-        transmission_sig: headers['paypal-transmission-sig'],
-        transmission_time: headers['paypal-transmission-time'],
-        webhook_id: webhookId,
-        webhook_event: payload,
-      });
-
-      return response.verification_status === 'SUCCESS';
-    } catch (error) {
-      this.logger.error('❌ Error verifying webhook signature:', error);
-      return false;
-    }
-  }
-
-  // ==================== Utilidades ====================
-
-  /**
-   * Obtener URL de aprobación de un pedido
-   */
-  getApprovalUrl(links: any[]): string | null {
-    const approvalLink = links.find(link => link.rel === 'approve');
-    return approvalLink?.href || null;
-  }
-
-  /**
-   * Verificar si está en modo sandbox
+   * Check if sandbox mode
    */
   isSandbox(): boolean {
     return this.mode === 'sandbox';
   }
 
   /**
-   * Obtener información del servicio
+   * Get service info
    */
   getServiceInfo() {
     return {
