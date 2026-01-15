@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { DevicesService } from '../devices/devices.service';
-import { UserRole } from '../users/entities/user.entity';
+import { UserRole, GpsProvider } from '../users/entities/user.entity';
 
 @Injectable()
 export class AdminService {
@@ -101,6 +101,26 @@ export class AdminService {
       gpsTraceUserId: user.gpsTraceUserId,
       devices,
       deviceCount: devices.length,
+    };
+  }
+
+  async linkUserToTraccar(userId: string, traccarUserId: string) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.usersService.update(userId, {
+      traccarUserId,
+      gpsProvider: GpsProvider.TRACCAR,
+    });
+
+    return {
+      message: 'User linked to Traccar successfully',
+      userId,
+      traccarUserId,
+      gpsProvider: GpsProvider.TRACCAR,
     };
   }
 

@@ -60,6 +60,14 @@ export class AdminController {
     return this.adminService.getAllDevices();
   }
 
+  @Patch('users/:userId/traccar')
+  async linkUserToTraccar(
+    @Param('userId') userId: string,
+    @Body() body: { traccarUserId: string },
+  ) {
+    return this.adminService.linkUserToTraccar(userId, body.traccarUserId);
+  }
+
   // ============================================
   // MIGRATION ENDPOINTS
   // ============================================
