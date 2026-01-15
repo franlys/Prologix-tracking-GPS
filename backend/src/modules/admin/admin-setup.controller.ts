@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User, UserRole, GpsProvider } from '../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
 /**
@@ -104,6 +104,55 @@ export class AdminSetupController {
         email: admin.email,
         name: admin.name,
         role: admin.role,
+      },
+    };
+  }
+
+  /**
+   * Endpoint para vincular un usuario con Traccar
+   * POST /admin-setup/link-traccar
+   * Body: { email: "tu-email@ejemplo.com", password: "tu-contraseña", traccarUserId: "1" }
+   */
+  @Post('link-traccar')
+  async linkToTraccar(
+    @Body() body: { email: string; password: string; traccarUserId: string },
+  ) {
+    const { email, password, traccarUserId } = body;
+
+    // Buscar usuario
+    const user = await this.userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      return {
+        success: false,
+        message: 'Usuario no encontrado',
+      };
+    }
+
+    // Verificar contraseña
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return {
+        success: false,
+        message: 'Contraseña incorrecta',
+      };
+    }
+
+    // Actualizar para usar Traccar
+    user.gpsProvider = GpsProvider.TRACCAR;
+    user.traccarUserId = traccarUserId;
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      message: 'Usuario vinculado a Traccar exitosamente',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        gpsProvider: user.gpsProvider,
+        traccarUserId: user.traccarUserId,
       },
     };
   }
