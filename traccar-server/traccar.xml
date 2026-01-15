@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+<properties>
+    <entry key='config.default'>./conf/default.xml</entry>
+
+    <!-- Database H2 (embedded, for simplicity on Railway) -->
+    <!-- For production with more data, use PostgreSQL -->
+    <entry key='database.driver'>org.h2.Driver</entry>
+    <entry key='database.url'>jdbc:h2:./data/database</entry>
+    <entry key='database.user'>sa</entry>
+    <entry key='database.password'></entry>
+
+    <!-- Web Server -->
+    <entry key='server.port'>8082</entry>
+
+    <!-- CORS - Allow all origins for API access -->
+    <entry key='web.origin'>*</entry>
+
+    <!-- Enable registration for first user setup -->
+    <entry key='registration.enable'>true</entry>
+
+    <!-- Logging -->
+    <entry key='logger.console'>true</entry>
+    <entry key='logger.level'>info</entry>
+
+    <!-- Geocoder (disabled to save resources) -->
+    <entry key='geocoder.enable'>false</entry>
+
+    <!-- GPS Protocol Ports -->
+    <!-- GPS103/Coban - Most common Chinese trackers -->
+    <entry key='gps103.port'>5001</entry>
+
+    <!-- GT06 Protocol - Popular protocol -->
+    <entry key='gt06.port'>5013</entry>
+
+    <!-- TK103 Protocol -->
+    <entry key='tk103.port'>5023</entry>
+
+    <!-- Disable unused protocols to save resources -->
+    <entry key='teltonika.port'>0</entry>
+    <entry key='watch.port'>0</entry>
+    <entry key='t55.port'>0</entry>
+    <entry key='xexun.port'>0</entry>
+    <entry key='totem.port'>0</entry>
+    <entry key='enfora.port'>0</entry>
+    <entry key='meiligao.port'>0</entry>
+    <entry key='trv.port'>0</entry>
+    <entry key='suntech.port'>0</entry>
+    <entry key='progress.port'>0</entry>
+    <entry key='h02.port'>0</entry>
+    <entry key='jt600.port'>0</entry>
+    <entry key='huabao.port'>0</entry>
+    <entry key='v680.port'>0</entry>
+    <entry key='pt502.port'>0</entry>
+    <entry key='tr20.port'>0</entry>
+    <entry key='navis.port'>0</entry>
+    <entry key='meitrack.port'>0</entry>
+    <entry key='skypatrol.port'>0</entry>
+    <entry key='gt02.port'>0</entry>
+    <entry key='gt06.port'>5013</entry>
+    <entry key='megastek.port'>0</entry>
+    <entry key='navigil.port'>0</entry>
+    <entry key='gpsgate.port'>0</entry>
+    <entry key='atrack.port'>0</entry>
+    <entry key='pt3000.port'>0</entry>
+    <entry key='ruptela.port'>0</entry>
+    <entry key='piccolo.port'>0</entry>
+    <entry key='queclink.port'>0</entry>
+</properties>
