@@ -125,18 +125,19 @@ export class TraccarService {
 
   /**
    * Get latest positions for devices
+   * Note: Traccar API expects multiple deviceId params for filtering (e.g., ?deviceId=1&deviceId=2)
+   * If no deviceIds provided, returns positions for all devices the authenticated user has access to
    */
   async getPositions(deviceIds?: number[]): Promise<TraccarPosition[]> {
     try {
-      const params: any = {};
+      // Build query string manually for multiple deviceId params
+      let url = '/api/positions';
       if (deviceIds && deviceIds.length > 0) {
-        params.deviceId = deviceIds.join(',');
+        const queryParams = deviceIds.map(id => `deviceId=${id}`).join('&');
+        url = `${url}?${queryParams}`;
       }
 
-      const response = await this.axiosInstance.get<TraccarPosition[]>(
-        '/api/positions',
-        { params }
-      );
+      const response = await this.axiosInstance.get<TraccarPosition[]>(url);
       return response.data;
     } catch (error) {
       this.handleError(error, 'Failed to fetch positions from Traccar');
