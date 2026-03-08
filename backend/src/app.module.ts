@@ -16,6 +16,7 @@ import { GpsTraceModule } from './integrations/gps-trace/gps-trace.module';
 import { CommonModule } from './common/common.module';
 import { LegalModule } from './modules/legal/legal.module';
 import { TraccarModule } from './integrations/traccar/traccar.module';
+import { GeofencesModule } from './modules/geofences/geofences.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { TraccarModule } from './integrations/traccar/traccar.module';
     GpsTraceModule,
     TraccarModule,
     LegalModule,
+    GeofencesModule,
   ],
 })
 export class AppModule { }

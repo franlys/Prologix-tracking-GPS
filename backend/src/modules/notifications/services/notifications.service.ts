@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { NotificationRule, NotificationType, NotificationChannel } from '../entities/notification-rule.entity';
@@ -8,6 +8,7 @@ import { WhatsAppService } from './whatsapp.service';
 import { CreateNotificationRuleDto } from '../dto/create-notification-rule.dto';
 import { UpdateNotificationRuleDto } from '../dto/update-notification-rule.dto';
 import { User } from '../../users/entities/user.entity';
+import { GeofencesService, GeofenceCheckResult } from '../../geofences/services/geofences.service';
 
 @Injectable()
 export class NotificationsService {
@@ -22,6 +23,8 @@ export class NotificationsService {
     private usersRepo: Repository<User>,
     private emailService: EmailService,
     private whatsAppService: WhatsAppService,
+    @Inject(forwardRef(() => GeofencesService))
+    private geofencesService: GeofencesService,
   ) {}
 
   // ==================== CRUD for Notification Rules ====================
@@ -353,15 +356,97 @@ export class NotificationsService {
     }
   }
 
-  // Método de utilidad para verificar geofencing (se implementará en Fase 3)
+  /**
+   * Check geofence enter/exit events and send notifications
+   * Returns array of geofence events that occurred
+   */
   async checkGeofence(
     userId: string,
     deviceId: string,
     deviceName: string,
     lat: number,
     lng: number,
-  ): Promise<void> {
-    // TODO: Implementar en Fase 3 - Geocercas
-    this.logger.debug('Geofence checking not yet implemented');
+  ): Promise<GeofenceCheckResult[]> {
+    try {
+      // Check all geofences for this device
+      const events = await this.geofencesService.checkDeviceGeofences(
+        userId,
+        deviceId,
+        lat,
+        lng,
+      );
+
+      // Send notifications for each event
+      for (const event of events) {
+        if (event.entered) {
+          // Get notification rules for GEOFENCE_ENTER
+          const rules = await this.notificationRulesRepo.find({
+            where: [
+              { userId, deviceId, type: NotificationType.GEOFENCE_ENTER, isActive: true },
+              { userId, deviceId: null, type: NotificationType.GEOFENCE_ENTER, isActive: true },
+            ],
+          });
+
+          for (const rule of rules) {
+            const canSend = await this.canSendNotification(
+              userId,
+              deviceId,
+              NotificationType.GEOFENCE_ENTER,
+              rule.channel,
+              rule.cooldownSeconds,
+            );
+
+            if (canSend) {
+              await this.sendNotification({
+                userId,
+                deviceId,
+                deviceName,
+                type: NotificationType.GEOFENCE_ENTER,
+                channel: rule.channel,
+                subject: `📍 Entrada a zona: ${event.geofenceName}`,
+                message: `El dispositivo "${deviceName}" ha ENTRADO a la zona "${event.geofenceName}".`,
+              });
+            }
+          }
+        }
+
+        if (event.exited) {
+          // Get notification rules for GEOFENCE_EXIT
+          const rules = await this.notificationRulesRepo.find({
+            where: [
+              { userId, deviceId, type: NotificationType.GEOFENCE_EXIT, isActive: true },
+              { userId, deviceId: null, type: NotificationType.GEOFENCE_EXIT, isActive: true },
+            ],
+          });
+
+          for (const rule of rules) {
+            const canSend = await this.canSendNotification(
+              userId,
+              deviceId,
+              NotificationType.GEOFENCE_EXIT,
+              rule.channel,
+              rule.cooldownSeconds,
+            );
+
+            if (canSend) {
+              await this.sendNotification({
+                userId,
+                deviceId,
+                deviceName,
+                type: NotificationType.GEOFENCE_EXIT,
+                channel: rule.channel,
+                subject: `📍 Salida de zona: ${event.geofenceName}`,
+                message: `El dispositivo "${deviceName}" ha SALIDO de la zona "${event.geofenceName}".`,
+              });
+            }
+          }
+        }
+      }
+
+      return events;
+    } catch (error) {
+      this.logger.error(`Error checking geofences for device ${deviceId}:`, error);
+      return [];
+    }
   }
 }

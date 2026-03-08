@@ -182,6 +182,29 @@ export class PositionsGateway
   }
 
   /**
+   * Emit geofence enter/exit event
+   */
+  emitGeofenceEvent(userId: string, deviceId: string, event: {
+    type: 'GEOFENCE_ENTER' | 'GEOFENCE_EXIT';
+    geofenceId: string;
+    geofenceName: string;
+    deviceId: string;
+    latitude: number;
+    longitude: number;
+    timestamp: string;
+  }) {
+    // Emit to user room
+    this.server.to(`user:${userId}`).emit('geofence:event', event);
+
+    // Emit to device subscribers
+    this.server.to(`device:${deviceId}`).emit('geofence:event', event);
+
+    this.logger.log(
+      `📍 Geofence ${event.type}: Device ${deviceId} - ${event.geofenceName}`,
+    );
+  }
+
+  /**
    * Get connection statistics
    */
   getStats() {

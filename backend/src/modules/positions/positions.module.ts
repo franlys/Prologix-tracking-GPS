@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JwtModule } from '@nestjs/jwt';
@@ -12,6 +12,7 @@ import { PositionsGateway } from './gateways/positions.gateway';
 import { TraccarModule } from '../../integrations/traccar/traccar.module';
 import { GpsTraceModule } from '../../integrations/gps-trace/gps-trace.module';
 import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UsersModule } from '../users/users.module';
     TraccarModule,
     GpsTraceModule,
     UsersModule,
+    forwardRef(() => NotificationsModule),
   ],
   controllers: [PositionsController],
   providers: [

@@ -9,6 +9,7 @@ import { UsersService } from '../../users/users.service';
 import { GpsProvider } from '../../users/entities/user.entity';
 import { PositionsGateway } from '../gateways/positions.gateway';
 import { PositionsQueryService } from './positions-query.service';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 
 @Injectable()
 export class PositionsSyncService {
@@ -25,6 +26,8 @@ export class PositionsSyncService {
     private positionsGateway: PositionsGateway,
     @Inject(forwardRef(() => PositionsQueryService))
     private positionsQuery: PositionsQueryService,
+    @Inject(forwardRef(() => NotificationsService))
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -276,6 +279,38 @@ export class PositionsSyncService {
         // Don't fail position save if cache invalidation fails
         this.logger.warn(
           `Cache invalidation failed for device ${position.deviceId}: ${cacheError.message}`,
+        );
+      }
+
+      // ========== CHECK GEOFENCES ==========
+      // Check if device entered/exited any geofences
+      try {
+        const geofenceEvents = await this.notificationsService.checkGeofence(
+          position.userId,
+          position.deviceId,
+          position.deviceId, // deviceName - we use deviceId for now
+          Number(position.latitude),
+          Number(position.longitude),
+        );
+
+        // Emit geofence events via WebSocket
+        for (const event of geofenceEvents) {
+          if (event.entered || event.exited) {
+            this.positionsGateway.emitGeofenceEvent(position.userId, position.deviceId, {
+              type: event.entered ? 'GEOFENCE_ENTER' : 'GEOFENCE_EXIT',
+              geofenceId: event.geofenceId,
+              geofenceName: event.geofenceName,
+              deviceId: position.deviceId,
+              latitude: Number(position.latitude),
+              longitude: Number(position.longitude),
+              timestamp: position.timestamp.toISOString(),
+            });
+          }
+        }
+      } catch (geofenceError) {
+        // Don't fail position save if geofence check fails
+        this.logger.warn(
+          `Geofence check failed for device ${position.deviceId}: ${geofenceError.message}`,
         );
       }
 
