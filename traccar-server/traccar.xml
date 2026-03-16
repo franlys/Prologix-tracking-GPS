@@ -4,11 +4,11 @@
     <entry key='config.default'>./conf/default.xml</entry>
 
     <!-- Database PostgreSQL Configuration (Railway) -->
-    <!-- Using Railway's PostgreSQL for data persistence -->
+    <!-- Credentials injected via environment variables at runtime -->
     <entry key='database.driver'>org.postgresql.Driver</entry>
-    <entry key='database.url'>jdbc:postgresql://centerbeam.proxy.rlwy.net:45959/railway?currentSchema=traccar</entry>
-    <entry key='database.user'>postgres</entry>
-    <entry key='database.password'>OHfDLpsKpmSyQwETExutAVrrSsBVoWYr</entry>
+    <entry key='database.url'>TRACCAR_DB_URL_PLACEHOLDER</entry>
+    <entry key='database.user'>TRACCAR_DB_USER_PLACEHOLDER</entry>
+    <entry key='database.password'>TRACCAR_DB_PASSWORD_PLACEHOLDER</entry>
 
     <!-- Web Server -->
     <entry key='server.port'>8082</entry>
