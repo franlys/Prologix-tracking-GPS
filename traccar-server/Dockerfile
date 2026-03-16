@@ -9,7 +9,7 @@ cp /opt/traccar/conf/traccar.xml.template /opt/traccar/conf/traccar.xml\n\
 sed -i "s|TRACCAR_DB_URL_PLACEHOLDER|${TRACCAR_DB_URL}|g" /opt/traccar/conf/traccar.xml\n\
 sed -i "s|TRACCAR_DB_USER_PLACEHOLDER|${TRACCAR_DB_USER}|g" /opt/traccar/conf/traccar.xml\n\
 sed -i "s|TRACCAR_DB_PASSWORD_PLACEHOLDER|${TRACCAR_DB_PASSWORD}|g" /opt/traccar/conf/traccar.xml\n\
-exec /opt/traccar/bin/traccar.sh\n\
+exec java -jar /opt/traccar/lib/tracker-server.jar /opt/traccar/conf/traccar.xml\n\
 ' > /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 8082 5001 5013 5023
